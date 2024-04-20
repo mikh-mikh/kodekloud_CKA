@@ -1,0 +1,420 @@
+Keep your face always toward the sunshine, and shadows will fall behind you.
+
+Weight: 8
+SECTION: ARCHITECTURE, INSTALL AND MAINTENANCE
+
+For this question, please set the context to cluster1 by running:
+
+
+kubectl config use-context cluster1
+
+A pod called color-app-cka13-arch has been created in the default namespace. This pod logs can be accessed using kubectl logs -f color-app-cka13-arch command from the student-node. It is currently displaying Color is pink output. Update the pod definition file to make use of the environment variable with the value - green and recreate this pod.
+
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: "2024-04-18T14:22:32Z"
+  name: color-app-cka13-arch
+  namespace: default
+  resourceVersion: "1483"
+  uid: 1b4045ce-bdff-4e84-a6f3-17aea45a50cb
+spec:
+  containers:
+  - args:
+    - /bin/sh
+    - -c
+    - while true; do echo "Color is $APP_COLOR"; sleep 2; done
+    env:
+    - name: APP_COLOR
+      value: green
+    image: busybox
+    imagePullPolicy: Always
+    name: hello
+    resources: {}
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: kube-api-access-925gw
+      readOnly: true
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  nodeName: cluster1-node01
+  preemptionPolicy: PreemptLowerPriority
+  priority: 0
+  restartPolicy: Always
+  schedulerName: default-scheduler
+  securityContext: {}
+  serviceAccount: default
+  serviceAccountName: default
+  terminationGracePeriodSeconds: 30
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
+  volumes:
+  - name: kube-api-access-925gw
+    projected:
+      defaultMode: 420
+      sources:
+      - serviceAccountToken:
+          expirationSeconds: 3607
+          path: token
+      - configMap:
+          items:
+          - key: ca.crt
+            path: ca.crt
+          name: kube-root-ca.crt
+      - downwardAPI:
+          items:
+          - fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+            path: namespace
+status:
+  conditions:
+  - lastProbeTime: null
+    lastTransitionTime: "2024-04-18T14:22:32Z"
+    status: "True"
+    type: Initialized
+  - lastProbeTime: null
+    lastTransitionTime: "2024-04-18T14:22:38Z"
+    status: "True"
+    type: Ready
+  - lastProbeTime: null
+    lastTransitionTime: "2024-04-18T14:22:38Z"
+    status: "True"
+    type: ContainersReady
+  - lastProbeTime: null
+    lastTransitionTime: "2024-04-18T14:22:32Z"
+    status: "True"
+    type: PodScheduled
+  containerStatuses:
+  - containerID: containerd://7c9447111d8d61f8aaf500c018be8c0c6f510005af9eb55cfce4dd9b6dc5d863
+    image: docker.io/library/busybox:latest
+    imageID: docker.io/library/busybox@sha256:c3839dd800b9eb7603340509769c43e146a74c63dca3045a8e7dc8ee07e53966
+    lastState: {}
+    name: hello
+    ready: true
+    restartCount: 0
+    started: true
+    state:
+      running:
+        startedAt: "2024-04-18T14:22:37Z"
+  hostIP: 192.31.145.12
+  phase: Running
+  podIP: 10.50.192.1
+  podIPs:
+  - ip: 10.50.192.1
+  qosClass: BestEffort
+  startTime: "2024-04-18T14:22:32Z"
+
+
+
+1) k config use-context cluster1
+
+2) 
+
+k get pod color-app-cka13-arch -o yaml > newpod.yaml
+vi newpod.yaml:
+search "pink" and set "green":
+	/pink
+set to "green"
+	:wq
+
+k delete pod color-app-cka13-arch --grace-period 0 --force
+k apply -f newpod.yaml
+
+OR
+
+k edit pod color-app-cka13-arch:
+
+search "pink" and set "green":
+	/pink
+set to "green"
+	:wq
+
+
+
+3) k logs -f color-app-cka13-arch 
+Color is green
+Color is green
+Color is green
+Color is green
+Color is green
+Color is green
+
+
+
+===============================
+
+
+SECTION: ARCHITECTURE, INSTALL AND MAINTENANCE
+
+For this question, please set the context to cluster1 by running:
+
+kubectl config use-context cluster1
+
+A pod named beta-pod-cka01-arch has been created in the beta-cka01-arch namespace. Inspect the logs and save all logs starting with the string ERROR in file /root/beta-pod-cka01-arch_errors on the student-node.
+
+k logs -n beta-cka01-arch beta-pod-cka01-arch | grep ERROR > /root/beta-pod-cka01-arch_errors
+cat /root/beta-pod-cka01-arch_errors
+ERROR: Thu Apr 18 14:39:43 UTC 2024 Logger encountered errors!
+ERROR: Thu Apr 18 14:39:43 UTC 2024 Logger encountered errors!
+ERROR: Thu Apr 18 14:39:43 UTC 2024 Logger encountered errors!
+ERROR: Thu Apr 18 14:39:43 UTC 2024 Logger encountered errors!
+ERROR: Thu Apr 18 14:39:43 UTC 2024 Logger encountered errors!
+ERROR: Thu Apr 18 14:39:43 UTC 2024 Logger encountered errors!
+ERROR: Thu Apr 18 14:39:43 UTC 2024 Logger encountered errors!
+........
+
+
+=================================
+
+Weight: 4
+SECTION: ARCHITECTURE, INSTALL AND MAINTENANCE
+
+For this question, please set the context to cluster3 by running:
+
+kubectl config use-context cluster3
+
+A pod called logger-cka03-arch has been created in the default namespace. Inspect this pod and save ALL INFO and ERROR's to the file /root/logger-cka03-arch-all on the student-node.
+
+k logs logger-cka03-arch | grep -E 'INFO|ERROR' > /root/logger-cka03-arch-all
+
+==================================
+
+Weight: 4
+SECTION: ARCHITECTURE, INSTALL AND MAINTENANCE
+
+For this question, please set the context to cluster3 by running:
+
+kubectl config use-context cluster3
+
+A pod called logger-complete-cka04-arch has been created in the default namespace. Inspect this pod and save ALL the logs to the file /root/logger-complete-cka04-arch on the student-node.
+
+k logs logger-complete-cka04-arch > /root/logger-complete-cka04-arch
+
+===============================
+
+Weight: 5
+SECTION: ARCHITECTURE, INSTALL AND MAINTENANCE
+
+For this question, please set the context to cluster1 by running:
+
+kubectl config use-context cluster1
+
+Create a generic secret called db-user-pass-cka17-arch in the default namespace on cluster1 using the contents of the file /opt/db-user-pass on the student-node
+
+kubectl create secret generic db-user-pass-cka17-arch --from-file=/opt/db-user-pass
+
+===============================
+
+Weight: 8
+SECTION: TROUBLESHOOTING
+
+For this question, please set the context to cluster1 by running:
+
+kubectl config use-context cluster1
+
+We deployed an app using a deployment called web-dp-cka06-trb. it's using the httpd:latest image. There is a corresponding service called web-service-cka06-trb that exposes this app on the node port 30005. However, the app is not accessible!
+Troubleshoot and fix this issue. Make sure you are able to access the app using curl http://kodekloud-exam.app:30005 command.
+
+1) k describe pod web-dp-cka06-trb-5d6759ddc9-4kv7t:
+"persistentvolumeclaim "web-cka06-trb" not found"
+k get persistentvolumeclaims:
+NAME                STATUS   VOLUME             CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+web-pvc-cka06-trb   Bound    web-pv-cka06-trb   100Mi      RWO            manual         7m22s
+
+set correct PVC: 
+	k edit deployment:
+	find web-cka06-trb change to web-pvc-cka06-trb
+
+2) k logs web-dp-cka06-trb-7c6bd9cd85-6t4tq 
+Error from server (BadRequest): container "web-container" in pod "web-dp-cka06-trb-7c6bd9cd85-6t4tq" is waiting to start: image can't be pulled
+
+set correct image:
+	k edit deployments.apps web-dp-cka06-trb:
+		- image: httpd:letest (LOL)
+	change "latest" to "latest"	 
+
+3) k logs web-dp-cka06-trb-7c6bd9cd85-6t4tq
+AH00558: httpd: Could not reliably determine the server's fully qualified domain name, using 10.50.64.1. Set the 'ServerName' directive globally to suppress this message
+AH00558: httpd: Could not reliably determine the server's fully qualified domain name, using 10.50.64.1. Set the 'ServerName' directive globally to suppress this message
+[Thu Apr 18 15:06:30.143095 2024] [mpm_event:notice] [pid 1:tid 140239153977216] AH00489: Apache/2.4.59 (Unix) configured -- resuming normal operations
+[Thu Apr 18 15:06:30.143217 2024] [core:notice] [pid 1:tid 140239153977216] AH00094: Command line: 'httpd -D FOREGROUND'
+[Thu Apr 18 15:06:30.202892 2024] [mpm_event:notice] [pid 1:tid 140239153977216] AH00492: caught SIGWINCH, shutting down gracefully
+
+LOL
+
+k edit deployments.apps web-dp-cka06-trb:
+
+postStart:
+   exec:
+     command: ["/bin/echo 'Test Page' > /usr/local/apache2/htdocs/index.html"]
+
+
+
+
+List the deployments to see if all PODs under web-dp-cka06-trb deployment are up and running.
+kubectl get deploy
+You will notice that 0 out of 1 PODs are up, so let's look into the POD now.
+
+kubectl get pod
+You will notice that web-dp-cka06-trb-xxx pod is in Pending state, so let's checkout the relevant events.
+
+kubectl get event --field-selector involvedObject.name=web-dp-cka06-trb-xxx
+You should see some error/warning like this:
+
+Warning   FailedScheduling   pod/web-dp-cka06-trb-76b697c6df-h78x4   0/1 nodes are available: 1 persistentvolumeclaim "web-cka06-trb" not found. preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.
+Let's look into the PVCs
+
+kubectl get pvc
+You should see web-pvc-cka06-trb in the output but as per logs the POD was looking for web-cka06-trb PVC. Let's update the deployment to fix this.
+
+kubectl edit deploy web-dp-cka06-trb
+Under volumes: -> name: web-str-cka06-trb -> persistentVolumeClaim: -> claimName change web-cka06-trb to web-pvc-cka06-trb and save the changes.
+
+Look into the POD again to make sure its running now
+
+kubectl get pod
+You will find that its still failing, most probably with ErrImagePull or ImagePullBackOff error. Now lets update the deployment again to make sure its using the correct image.
+
+kubectl edit deploy web-dp-cka06-trb
+Under spec: -> containers: -> change image from httpd:letest to httpd:latest and save the changes.
+Look into the POD again to make sure its running now
+
+kubectl get pod
+You will notice that POD is still crashing, let's look into the POD logs.
+
+kubectl logs web-dp-cka06-trb-xxxx
+If there are no useful logs then look into the events
+
+kubectl get event --field-selector involvedObject.name=web-dp-cka06-trb-xxxx --sort-by='.lastTimestamp'
+You should see some errors/warnings as below
+
+Warning   FailedPostStartHook   pod/web-dp-cka06-trb-67dccb7487-2bjgf   Exec lifecycle hook ([/bin -c echo 'Test Page' > /usr/local/apache2/htdocs/index.html]) for Container "web-container" in Pod "web-dp-cka06-trb-67dccb7487-2bjgf_default(4dd6565e-7f1a-4407-b3d9-ca595e6d4e95)" failed - error: rpc error: code = Unknown desc = failed to exec in container: failed to start exec "c980799567c8176db5931daa2fd56de09e84977ecd527a1d1f723a862604bd7c": OCI runtime exec failed: exec failed: unable to start container process: exec: "/bin": permission denied: unknown, message: ""
+Let's look into the lifecycle hook of the pod
+
+kubectl edit deploy web-dp-cka06-trb
+Under containers: -> lifecycle: -> postStart: -> exec: -> command: change /bin to /bin/sh
+Look into the POD again to make sure its running now
+
+kubectl get pod
+Finally pod should be in running state. Let's try to access the webapp now.
+
+curl http://kodekloud-exam.app:30005
+You will see error curl: (7) Failed to connect to kodekloud-exam.app port 30005: Connection refused
+Let's look into the service
+
+kubectl edit svc web-service-cka06-trb
+Let's verify if the selector labels and ports are correct as needed. You will note that service is using selector: -> app: web-cka06-trb
+Now, let's verify the app labels:
+
+kubectl get deploy web-dp-cka06-trb -o yaml
+Under labels you will see labels: -> deploy: web-app-cka06-trb
+So we can see that service is using wrong selector label, let's edit the service to fix the same
+
+kubectl edit svc web-service-cka06-trb
+Let's try to access the webapp now.
+
+curl http://kodekloud-exam.app:30005
+Boom! app should be accessible now.
+
+==================================
+
+
+Weight: 8
+SECTION: TROUBLESHOOTING
+
+
+For this question, please set the context to cluster1 by running:
+
+
+kubectl config use-context cluster1
+
+
+​A pod called nginx-cka01-trb is running in the default namespace. There is a container called nginx-container running inside this pod that uses the image nginx:latest. There is another sidecar container called logs-container that runs in this pod.
+
+For some reason, this pod is continuously crashing. Identify the issue and fix it. Make sure that the pod is in a running state and you are able to access the website using the curl http://kodekloud-exam.app:30001 command on the controlplane node of cluster1.
+
+k logs  nginx-cka01-trb nginx-container 
+Error from server (BadRequest): container "nginx-container" in pod "nginx-cka01-trb" is waiting to start: trying and failing to pull image
+
+k edit pod nginx-cka01-trb:
+
+- image: nginx:ltest (fix ltetst to latest)
+
+k logs nginx-cka01-trb logs-container 
+cat: can't open '/var/log/httpd/access.log': No such file or directory
+cat: can't open '/var/log/httpd/error.log': No such file or directory
+
+k get pod nginx-cka01-trb -o yaml > nginx_fix.yaml
+vi nginx_fix.yaml:
+
+- command:
+    - sh
+    - -c
+    - while true; do cat /var/log/httpd/access.log /var/log/https/error.log || exit #change "httpd" to "nginx"
+
+k apply -f nginx_fix.yaml
+
+k edit service nginx-service-cka01-trb
+
+change label:
+    app: httpd-app-cka01-trb  #(change it to nginx-app-cka01-trb)
+
+curl http://kodekloud-exam.app:30001
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+<style>
+html { color-scheme: light dark; }
+body { width: 35em; margin: 0 auto;
+font-family: Tahoma, Verdana, Arial, sans-serif; }
+</style>
+</head>
+<body>
+<h1>Welcome to nginx!</h1>
+<p>If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.</p>
+
+<p>For online documentation and support please refer to
+<a href="http://nginx.org/">nginx.org</a>.<br/>
+Commercial support is available at
+<a href="http://nginx.com/">nginx.com</a>.</p>
+
+<p><em>Thank you for using nginx.</em></p>
+</body>
+</html>
+
+
+==================================
+
+Weight: 2
+SECTION: TROUBLESHOOTING
+
+For this question, please set the context to cluster1 by running:
+
+kubectl config use-context cluster1
+
+demo-pod-cka29-trb pod is stuck in aPending state, look into issue to fix the same, Make sure pod is in Running state and stable.
+
+Fixed the issues?
+ssh cluster1-controlplane pod is in running state?
+
+
+k describe pod demo-pod-cka29-trb
+
+Events:
+  Type     Reason            Age   From               Message
+  ----     ------            ----  ----               -------
+  Warning  FailedScheduling  73s   default-scheduler  0/3 nodes are available: 3 pod has unbound immediate PersistentVolumeClaims. preemption: 0/3 nodes are available: 3 Preemption is not helpful for scheduling.
+
+  

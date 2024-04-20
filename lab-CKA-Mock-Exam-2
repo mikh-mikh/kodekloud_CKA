@@ -1,0 +1,393 @@
+Weight: 8
+SECTION: ARCHITECTURE, INSTALL AND MAINTENANCE
+
+For this question, please set the context to cluster1 by running:
+
+kubectl config use-context cluster1
+
+We have created a service account called blue-sa-cka21-arch, a cluster role called blue-role-cka21-arch and a cluster role binding called blue-role-binding-cka21-arch.
+
+Update the permissions of this service account so that it can get the pods only in default namespace of cluster1.
+
+
++++++++ CHATGPT ANSWER (not applyied only fast and short info)+++++++++
+
+1. Create a Role that allows getting pods in the default namespace:
+
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: default
+  name: pod-reader
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list"]
+
+2. Bind the Role to the service account:
+
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: read-pods-default-namespace
+  namespace: default
+subjects:
+- kind: ServiceAccount
+  name: blue-role-cka21-arch
+  namespace: default
+roleRef:
+  kind: Role
+  name: pod-reader
+  apiGroup: rbac.authorization.k8s.io
+
+3. Apply these configurations to your Kubernetes cluster:
+
+kubectl apply -f role.yaml
+kubectl apply -f rolebinding.yaml
+
++++++++++++++++++++++++++++++++++++++
+
++++++++++++HUMAN+++++++++++++++++++++
+
+0.5) switch to cluster:
+kubectl config use-context cluster1
+
+1) get roles in cluster:
+
+k get clusterroles.rbac.authorization.k8s.io blue-role-cka21-arch -o yaml > blue-role-cka21-arch.yaml
+k get clusterrolebindings.rbac.authorization.k8s.io blue-role-binding-cka21-arch -o yaml > blue-role-binding-cka21-arch.yaml
+
+2) edit role and bindings to:
+blue-role-cka21-arch.yaml:
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: blue-role-cka21-arch
+  namespace: default
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "watch", "list"]
+
+blue-role-binding-cka21-arch.yaml:
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: blue-role-binding-cka21-arch
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: blue-role-cka21-arch
+subjects:
+- kind: ServiceAccount
+  name: blue-sa-cka21-arch
+  namespace: default
+
+3) Apply changes:
+k apply -f blue-role-cka21-arch.yaml
+k apply -f blue-role-binding-cka21-arch.yaml
+
++++++++++++++++++++++++++++++++++
+
+=================================
+
+Weight: 2
+SECTION: ARCHITECTURE, INSTALL AND MAINTENANCE
+
+Find the node across all clusters that consumes the most memory and store the result to the file /opt/high_memory_node in the following format cluster_name,node_name.
+
+The node could be in any clusters that are currently configured on the student-node.
+
++++++++ CHATGPT ANSWER (not applyied only fast and short info)+++++++++
+
+To find the node across all clusters that consumes the most memory and store the result in the specified file, you can use a script that iterates over all clusters, retrieves memory usage information for each node, and then identifies the node with the highest memory consumption. Here's a general outline of how you can achieve this using a Bash script:
+
+#!/bin/bash
+
+# Define the output file path
+output_file="/opt/high_memory_node"
+
+# Iterate over each configured cluster
+for cluster in $(kubectl config get-clusters -o=name); do
+    echo "Checking cluster: $cluster"
+    
+    # Get memory usage for each node in the cluster
+    nodes_memory=$(kubectl --context="$cluster" get nodes -o=jsonpath='{range .items[*]}{.metadata.name}:{.status.capacity.memory}{"\n"}{end}')
+    
+    # Loop through each node and store memory usage
+    while IFS= read -r node_memory; do
+        node_name=$(echo "$node_memory" | cut -d ':' -f 1)
+        memory_capacity=$(echo "$node_memory" | cut -d ':' -f 2)
+        echo "Node: $node_name Memory: $memory_capacity"
+        
+        # Store the node with the highest memory consumption
+        if [[ $memory_capacity -gt $max_memory_capacity ]]; then
+            max_memory_capacity=$memory_capacity
+            high_memory_node="$cluster,$node_name"
+        fi
+    done <<< "$nodes_memory"
+done
+
+# Write the result to the output file
+echo "$high_memory_node" > "$output_file"
+echo "High memory node: $high_memory_node"
+
+
+Make sure to replace student-node with the actual name of your Kubernetes cluster. This script iterates over each configured cluster, retrieves memory usage information for each node, identifies the node with the highest memory consumption, and then stores the result in the specified file /opt/high_memory_node in the format cluster_name,node_name.
+
+scipt is unworked correct (but works - i saw memconsums of nodes of their cluster), script may be fixed manually for future using
+
+i got helpful from script "kubectl config get-clusters" :)
+
++++++++++++++++++++++++++++++++++
+
+++++++++++humun++++++++++++++++++
+
+kubectl config get-clusters
+NAME
+cluster2
+cluster3
+cluster4
+cluster1
+
+kubectl config use-context cluster1
+kubectl top nodes
+NAME                    CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%   
+cluster1-controlplane   108m         0%     925Mi           0%    			# GOTCHA    
+cluster1-node01         24m          0%     297Mi           0%        
+cluster1-node02         22m          0%     336Mi           0%        
+
+kubectl config use-context cluster2
+Switched to context "cluster2".
+kubectl top nodes
+NAME                    CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%   
+cluster2-controlplane   125m         0%     891Mi           0%        
+cluster2-node01         20m          0%     331Mi           0%        
+
+kubectl config use-context cluster3
+Switched to context "cluster3".
+kubectl top nodes
+NAME                    CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%   
+cluster3-controlplane   69m          0%     917Mi           0%        
+
+kubectl config use-context cluster4
+Switched to context "cluster4".
+kubectl top nodes
+NAME                    CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%   
+cluster4-controlplane   103m         0%     900Mi           0%        
+cluster4-node01         27m          0%     327Mi           0% 
+
+echo "cluster1,cluster1-controlplane" > /opt/high_memory_node
+
+cat /opt/high_memory_node
+cluster1,cluster1-controlplane
+
+====================================
+
+Weight: 4
+SECTION: ARCHITECTURE, INSTALL AND MAINTENANCE
+
+For this question, please set the context to cluster3 by running:
+
+kubectl config use-context cluster3
+
+A pod called logger-cka03-arch has been created in the default namespace. Inspect this pod and save ALL INFO and ERROR's to the file /root/logger-cka03-arch-all on the student-node.
+
+++++++++++humun+++++++++++++++++++++
+
+kubectl config use-context cluster3
+k logs logger-cka03-arch | grep -E "INFO|ERROR" > /root/logger-cka03-arch-all
+cat /root/logger-cka03-arch-all
+INFO: Fri Apr 19 13:59:28 UTC 2024 Logger is running
+ERROR: Fri Apr 19 13:59:28 UTC 2024 Logger encountered errors!
+INFO: Fri Apr 19 13:59:28 UTC 2024 Logger is running
+ERROR: Fri Apr 19 13:59:28 UTC 2024 Logger encountered errors!
+INFO: Fri Apr 19 13:59:28 UTC 2024 Logger is running
+ERROR: Fri Apr 19 13:59:28 UTC 2024 Logger encountered errors!
+INFO: Fri Apr 19 13:59:28 UTC 2024 Logger is running
+ERROR: Fri Apr 19 13:59:28 UTC 2024 Logger encountered errors!
+INFO: Fri Apr 19 13:59:28 UTC 2024 Logger is running
+ERROR: Fri Apr 19 13:59:28 UTC 2024 Logger encountered errors!
+INFO: Fri Apr 19 13:59:28 UTC 2024 Logger is running
+ERROR: Fri Apr 19 13:59:28 UTC 2024 Logger encountered errors!
+............
+
+==========================================
+
+Weight: 1
+SECTION: ARCHITECTURE, INSTALL AND MAINTENANCE
+
+For this question, please set the context to cluster1 by running:
+
+kubectl config use-context cluster1
+
+There is a sample script located at /root/service-cka25-arch.sh on the student-node.
+Update this script to add a command to filter/display the targetPort only for service service-cka25-arch using jsonpath. The service has been created under the default namespace on cluster1.
+
+++++++++++++CHATGPT+++++++++++++++++++++++
+
+To update the script /root/service-cka25-arch.sh to filter and display the targetPort only for the service service-cka25-arch using JSONPath, you can incorporate a kubectl command that retrieves the targetPort information for the specified service. Here's how you can modify the script:
+
+#!/bin/bash
+
+# Update this script to add a command to filter/display the targetPort only for service service-cka25-arch using jsonpath
+
+# Set the namespace where the service is located
+namespace="default"
+
+# Set the name of the service
+service_name="service-cka25-arch"
+
+# Retrieve the targetPort for the specified service using JSONPath
+target_port=$(kubectl get svc "$service_name" -n "$namespace" -o=jsonpath='{.spec.ports[?(@.name=="http")].targetPort}')
+
+echo "Target Port for $service_name: $target_port"
+
+
+Replace cluster1 with the appropriate context name if it's different from cluster1. This script retrieves the targetPort for the service service-cka25-arch located in the default namespace on cluster1, using JSONPath. It then prints the targetPort to the console. Adjust the namespace and service name variables if they differ in your environment.
+
+SCRIPT IS NOT WORKING CORRECT :-) и дает отсебятину: ему же сказали "ТОЛЬКО targetPort" :-)
+
+++++++++++++humun + chatgpt+++++++++++++++++
+
+vi /root/service-cka25-arch.sh:
+
+#!/bin/bash
+namespace="default"
+# Set the name of the service
+service_name="service-cka25-arch"
+# Retrieve the targetPort for the specified service using JSONPathtarget_port=$(kubectl get svc "$service_name" -n 
+"$namespace" -o=jsonpath='{.spec.ports[0].targetPort}')
+
+echo $target_port
+
+
+chmod +x /root/service-cka25-arch.sh
+student-node ~ ➜  bash /root/service-cka25-arch.sh
+9376
+
+++++++++++++++++++++++++++++++++++++++++++++
+
+Weight: 10
+SECTION: ARCHITECTURE, INSTALL AND MAINTENANCE
+
+Find the pod that consumes the most CPU and store the result to the file /opt/high_cpu_pod in the following format cluster_name,namespace,pod_name.
+
+The pod could be in any namespace in any of the clusters that are currently configured on the student-node.
+
+NOTE: It's recommended to wait for a few minutes to allow deployed objects to become fully operational and start consuming resources.
+
+data stored in /opt/high_cpu_pod?
+
++++++++++++++humun++++++++++++++++++++++++++++++
+student-node ~ ➜  kubectl config use-context cluster1
+
+kubectl top nodes
+NAME                    CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%   
+cluster1-controlplane   515m         1%     943Mi           0%         #GOTCHA
+cluster1-node01         18m          0%     301Mi           0%        
+cluster1-node02         23m          0%     339Mi           0%   
+
+student-node ~ ➜  k get pod
+NAME                         READY   STATUS    RESTARTS   AGE
+frontend-stable-cka05-arch   1/1     Running   0          7m1s
+
+student-node ~ ➜  kubectl config use-context cluster2
+Switched to context "cluster2".
+
+student-node ~ ➜  kubectl top nodes
+NAME                    CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%   
+cluster2-controlplane   107m         0%     906Mi           0%        
+cluster2-node01         19m          0%     336Mi           0%        
+
+student-node ~ ➜  kubectl config use-context cluster3
+Switched to context "cluster3".
+
+student-node ~ ➜  kubectl top nodes
+NAME                    CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%   
+cluster3-controlplane   73m          0%     934Mi           0%        #there was pod without requests
+
+student-node ~ ➜  kubectl config use-context cluster4
+Switched to context "cluster4".
+
+student-node ~ ➜  kubectl top nodes
+NAME                    CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%   
+cluster4-controlplane   99m          0%     904Mi           0%        
+cluster4-node01         28m          0%     331Mi           0%  
+
+echo "cluster1,cluster1-controlplane,frontend-stable-cka05-arch" > /opt/high_cpu_pod
+
+
+
+
++++++++++++++++++chatgpt+++++++++++++++++++++++++++++
+
+#!/bin/bash
+  
+# Define the output file path
+output_file="/opt/high_cpu_pod"
+
+# Initialize variables to store information about the pod with highest CPU usage
+max_cpu_usage=0
+high_cpu_pod=""
+
+# Iterate over each configured cluster
+for cluster in $("kubectl config get-clusters | grep -v NAME" | sort); do
+    echo "Checking cluster: $cluster"
+
+    # Iterate over each namespace in the cluster
+    for namespace in $(kubectl --context="$cluster" get namespaces -o=jsonpath='{.items[*].metadata.name}'); do
+        echo "Checking namespace: $namespace"
+
+        # Get CPU usage for each pod in the namespace
+        pods_cpu_usage=$(kubectl --context="$cluster" -n "$namespace" top pods --no-headers | awk '{print $2,$1}')
+
+        # Loop through each pod and store CPU usage
+        while IFS= read -r pod_cpu_usage; do
+            cpu_usage=$(echo "$pod_cpu_usage" | awk '{print $1}')
+            pod_name=$(echo "$pod_cpu_usage" | awk '{print $2}')
+            echo "Pod: $pod_name CPU usage: $cpu_usage"
+
+            # Store the pod with the highest CPU consumption
+            if (( $(echo "$cpu_usage > $max_cpu_usage" | bc -l) )); then
+                max_cpu_usage=$cpu_usage
+                high_cpu_pod="$cluster,$namespace,$pod_name"
+            fi
+        done <<< "$pods_cpu_usage"
+    done
+done
+
+# Write the result to the output file
+echo "$high_cpu_pod" > "$output_file"
+echo "High CPU pod: $high_cpu_pod"
+
+Script is not correct working (bc -l (standard_in) 1: syntax error) - needs to cut "m" from cpu output - needs to get integer values)
+
+
+Solution
+Check out the metrics for all pods across all clusters:
+
+student-node ~ ➜  kubectl top pods -A --context cluster1 --no-headers | sort -nr -k3 | head -1
+kube-system   kube-apiserver-cluster1-controlplane            30m   258Mi   
+
+student-node ~ ➜  kubectl top pods -A --context cluster2 --no-headers | sort -nr -k3 | head -1
+kube-system   metrics-server-7cd5fcb6b7-fhdrl           5m    18Mi   
+
+student-node ~ ➜  kubectl top pods -A --context cluster3 --no-headers | sort -nr -k3 | head -1
+kube-system   metrics-server-7cd5fcb6b7-zvfrg           5m    18Mi   
+
+student-node ~ ➜  kubectl top pods -A --context cluster4 --no-headers | sort -nr -k3 | head -1
+kube-system   metrics-server-7cd5fcb6b7-zvfrg           5m    18Mi   
+
+
+Using this, find the pod that uses most CPU. In this case, it is kube-apiserver-cluster1-controlplane on cluster1.
+
+Save the result in the correct format to the file:
+
+student-node ~ ➜  echo cluster1,kube-system,kube-apiserver-cluster1-controlplane > /opt/high_cpu_pod 
+
+
+ ===================================================
+

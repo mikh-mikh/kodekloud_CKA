@@ -1,0 +1,113 @@
+Weight: 2
+SECTION: ARCHITECTURE, INSTALL AND MAINTENANCE
+
+For this question, please set the context to cluster3 by running:
+
+kubectl config use-context cluster3
+
+Run a pod called looper-cka16-arch using the busybox image that runs the while loop while true; do echo hello; sleep 10;done. This pod should be created in the default namespace.
+
+solution:
+
+kubectl run looper-cka16-arch --image=busybox --namespace=default --command -- /bin/sh -c "while true; do echo hello; sleep 10;done"
+
+check:
+
+kubectl logs looper-cka16-arch 
+hello
+hello
+hello
+hello
+....
+
+or 
+
+watch kubectl logs looper-cka16-arch
+
+=================================================================================
+
+Weight: 8
+SECTION: ARCHITECTURE, INSTALL AND MAINTENANCE
+
+For this question, please set the context to cluster3 by running:
+
+kubectl config use-context cluster3
+
+Decode the existing secret called beta-sec-cka14-arch created in the beta-ns-cka14-arch namespace and store the decoded content inside the file /opt/beta-sec-cka14-arch on the student-node.
+
+solution:
+
+++++++++++++++++++++++++++chatgpt "help"++++++++++++++++++++++++++
+
+1. Decode the Secret:
+   Run the following command to decode the secret and display the decoded content:
+
+   ```bash
+   kubectl get secret beta-sec-cka14-arch -n beta-ns-cka14-arch -o jsonpath='{.data}' | base64 --decode > decoded-secret.txt
+   ```
+
+   This command fetches the beta-sec-cka14-arch secret in the beta-ns-cka14-arch namespace, decodes the content, and saves it into a file named decoded-secret.txt.
+
+2. Copy the File to the Desired Location:
+   You can then copy the decoded-secret.txt file to your local machine (student-node) at the specified location (/opt/beta-sec-cka14-arch):
+
+   ```bash
+   scp decoded-secret.txt student-node:/opt/beta-sec-cka14-arch
+   ```
+
+   Replace student-node with the actual hostname or IP address of your local machine. This command copies the file to the specified directory on the local machine.
+
+By following these steps, you will decode the existing secret beta-sec-cka14-arch in the beta-ns-cka14-arch namespace and store the decoded content inside the file /opt/beta-sec-cka14-arch on your local machine.
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+my solution:
+
+student-node ~ ➜  k get secrets -n beta-ns-cka14-arch beta-sec-cka14-arch -o jsonpath='{.data}'
+{"secret":"VGhpcyBpcyB0aGUgc2VjcmV0IQo="}
+
+student-node ~ ➜  echo "VGhpcyBpcyB0aGUgc2VjcmV0IQo=" | base64 --decode > /opt/beta-sec-cka14-arch
+
+student-node ~ ➜  cat /opt/beta-sec-cka14-arch
+This is the secret!
+
+=================================================================================
+
+Weight: 1
+SECTION: ARCHITECTURE, INSTALL AND MAINTENANCE
+
+For this question, please set the context to cluster1 by running:
+
+kubectl config use-context cluster1
+
+There is a script located at /root/pod-cka26-arch.sh on the student-node. Update this script to add a command to filter/display the label with value component of the pod called kube-apiserver-cluster1-controlplane (on cluster1) using jsonpath.
+
+solution:
+
+/root/pod-cka26-arch.sh:
+
+#!/bin/bash
+kubectl get pod kube-apiserver-cluster1-controlplane -n kube-system -o=jsonpath='{.metadata.labels.component}'
+
+student-node ~ ➜  bash /root/pod-cka26-arch.sh 
+kube-apiserver
+
+=================================================================================
+
+Weight: 8
+SECTION: ARCHITECTURE, INSTALL AND MAINTENANCE
+
+For this question, please set the context to cluster1 by running:
+
+kubectl config use-context cluster1
+
+An etcd backup is already stored at the path /opt/cluster1_backup_to_restore.db on the cluster1-controlplane node. Use /root/default.etcd as the --data-dir and restore it on the cluster1-controlplane node itself.
+
+You can ssh to the controlplane node by running ssh root@cluster1-controlplane from the student-node.
+
+there was not /opt/cluster1_backup_to_restore.db on the cluster1-controlplane node - may be bug
+
+no solution
+
+=================================================================================
+
