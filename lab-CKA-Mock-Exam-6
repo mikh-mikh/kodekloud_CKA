@@ -1,0 +1,579 @@
+Weight: 2
+SECTION: ARCHITECTURE, INSTALL AND MAINTENANCE
+
+Find the node across all clusters that consumes the most memory and store the result to the file /opt/high_memory_node in the following format cluster_name,node_name.
+
+The node could be in any clusters that are currently configured on the student-node.
+
+data stored in /opt/high_memory_node?
+
+++++++++++humun++++++++++++++++++
+
+kubectl config get-clusters
+NAME
+cluster2
+cluster3
+cluster4
+cluster1
+
+kubectl config use-context cluster1
+kubectl top nodes
+NAME                    CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%   
+cluster1-controlplane   108m         0%     925Mi           0%    			# GOTCHA    
+cluster1-node01         24m          0%     297Mi           0%        
+cluster1-node02         22m          0%     336Mi           0%        
+
+kubectl config use-context cluster2
+Switched to context "cluster2".
+kubectl top nodes
+NAME                    CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%   
+cluster2-controlplane   125m         0%     891Mi           0%        
+cluster2-node01         20m          0%     331Mi           0%        
+
+kubectl config use-context cluster3
+Switched to context "cluster3".
+kubectl top nodes
+NAME                    CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%   
+cluster3-controlplane   69m          0%     917Mi           0%        
+
+kubectl config use-context cluster4
+Switched to context "cluster4".
+kubectl top nodes
+NAME                    CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%   
+cluster4-controlplane   103m         0%     900Mi           0%        
+cluster4-node01         27m          0%     327Mi           0% 
+
+echo "cluster1,cluster1-controlplane" > /opt/high_memory_node
+
+cat /opt/high_memory_node
+cluster1,cluster1-controlplane
+
+
+=============================================================================================
+
+Weight: 4
+SECTION: ARCHITECTURE, INSTALL AND MAINTENANCE
+
+For this question, please set the context to cluster3 by running:
+
+kubectl config use-context cluster3
+
+A pod called logger-complete-cka04-arch has been created in the default namespace. Inspect this pod and save ALL the logs to the file /root/logger-complete-cka04-arch on the student-node
+
+k logs logger-complete-cka04-arch > /root/logger-complete-cka04-arch
+
+=============================================================================================
+
+Weight: 8
+SECTION: ARCHITECTURE, INSTALL AND MAINTENANCE
+
+For this question, please set the context to cluster2 by running:
+
+kubectl config use-context cluster2
+
+Install etcd utility on cluster2-controlplane node so that we can take/restore etcd backups.
+
+You can ssh to the controlplane node by running ssh root@cluster2-controlplane from the student-node
+
+1) install:
+apt install etcd-client
+2) check:
+etcdctl 
+NAME:
+   etcdctl - A simple command line client for etcd.
+...........
+
+
+there was not correct (but it works)
+
+correct solution:
+
+Install etcd utility:
+
+cluster2-controlplane ~ ➜ cd /tmp
+cluster2-controlplane ~ ➜ export RELEASE=$(curl -s https://api.github.com/repos/etcd-io/etcd/releases/latest | grep tag_name | cut -d '"' -f 4)
+cluster2-controlplane ~ ➜ wget https://github.com/etcd-io/etcd/releases/download/${RELEASE}/etcd-${RELEASE}-linux-amd64.tar.gz
+cluster2-controlplane ~ ➜ tar xvf etcd-${RELEASE}-linux-amd64.tar.gz ; cd etcd-${RELEASE}-linux-amd64
+cluster2-controlplane ~ ➜ mv etcd etcdctl  /usr/local/bin/
+
+
+=============================================================================================
+
+Weight: 8
+SECTION: ARCHITECTURE, INSTALL AND MAINTENANCE
+
+For this question, please set the context to cluster1 by running:
+
+kubectl config use-context cluster1
+
+Create a service account called deploy-cka20-arch. Further create a cluster role called deploy-role-cka20-arch with permissions to get the deployments in cluster1.
+
+Finally create a cluster role binding called deploy-role-binding-cka20-arch to bind deploy-role-cka20-arch cluster role with deploy-cka20-arch service account.
+
+eploy-cka20-arch.yaml: 
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: deploy-cka20-arch
+
+deploy-role-cka20-arch.yaml:
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: deploy-role-cka20-arch
+rules:
+- apiGroups: [""]
+  resources: ["deployments"]
+  verbs: ["get"]
+
+deploy-role-binding-cka20-arch.yaml:
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: eploy-role-binding-cka20-arch
+subjects:
+- kind: ServiceAccount
+  name: deploy-cka20-arch
+  namespace: default
+roleRef:
+  kind: ClusterRole
+  name: deploy-role-cka20-arch
+  apiGroup: rbac.authorization.k8s.io
+
+k apply -f deploy-cka20-arch.yaml
+k apply -f deploy-role-cka20-arch.yaml
+k apply -f deploy-role-binding-cka20-arch.yaml
+
++++++++++++++++++++++++++++
+
+correct solution:
+
+Create the service account, cluster role and role binding:
+
+student-node ~ ➜  kubectl --context cluster1 create serviceaccount deploy-cka20-arch
+student-node ~ ➜  kubectl --context cluster1 create clusterrole deploy-role-cka20-arch --resource=deployments --verb=get
+student-node ~ ➜  kubectl --context cluster1 create clusterrolebinding deploy-role-binding-cka20-arch --clusterrole=deploy-role-cka20-arch --serviceaccount=default:deploy-cka20-arch
+
+
+
+You can verify it as below:
+
+student-node ~ ➜  kubectl --context cluster1 auth can-i get deployments --as=system:serviceaccount:default:deploy-cka20-arch
+yes
+
++++++++++++++++++++++
+
+=============================================================================================
+
+Weight: 3
+SECTION: ARCHITECTURE, INSTALL AND MAINTENANCE
+
+For this question, please set the context to cluster1 by running:
+
+kubectl config use-context cluster1
+
+A pod named beta-pod-cka01-arch has been created in the beta-cka01-arch namespace. Inspect the logs and save all logs starting with the string ERROR in file /root/beta-pod-cka01-arch_errors on the student-node
+
+k logs -n beta-cka01-arch beta-pod-cka01-arch | grep ERROR > /root/beta-pod-cka01-arch_errors
+
+=============================================================================================
+
+Weight: 8
+SECTION: TROUBLESHOOTING
+
+For this question, please set the context to cluster1 by running:
+
+kubectl config use-context cluster1
+
+A template to create a Kubernetes pod is stored at /root/red-probe-cka12-trb.yaml on the student-node. However, using this template as-is is resulting in an error.
+
+Fix the issue with this template and use it to create the pod. Once created, watch the pod for a minute or two to make sure its stable i.e, it's not crashing or restarting.
+
+Make sure you do not update the args: section of the template.
+
+Template is fixed and applied?
+POD is stable?
+Template is not manipulated?
+
+vi /root/red-probe-cka12-trb.yaml:
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: red-probe-cka12-trb
+spec:
+  containers:
+  - name: red-probe-cn-cka12-trb
+    image: busybox:latest
+    args:
+    - /bin/sh
+    - -c
+    - sleep 3 ; touch /healthcheck; sleep 30;sleep 30000
+    livenessProbe:
+      httpGet:             			# fix to exec
+          command:
+          - cat
+          - /healthcheck
+      initialDelaySeconds: 1        # set value >= sleep 3 (i sat 5), if 1 pod will restart because 3 > 1 (see args)
+      periodSeconds: 1
+      failureThreshold: 1
+
+k apply -f /root/red-probe-cka12-trb.yaml
+
+pod/red-probe-cka12-trb                   1/1     Running   0          4m30s
+
+=============================================================================================
+
+Weight: 4
+SECTION: TROUBLESHOOTING
+
+For this question, please set the context to cluster1 by running:
+
+kubectl config use-context cluster1
+
+The db-deployment-cka05-trb deployment is having 0 out of 1 PODs ready.
+
+Figure out the issues and fix the same but make sure that you do not remove any DB related environment variables from the deployment/pod.
+
+
+k describe pod db-deployment-cka05-trb-d6c66f466-ntf4w:
+.....
+Warning  Failed     11s (x3 over 26s)  kubelet            Error: couldn't find key db in Secret default/db-cka05-trb
+.....
+
+k describe secrets db-cka05-trb 
+Name:         db-cka05-trb
+Namespace:    default
+Labels:       <none>
+Annotations:  <none>
+
+Type:  Opaque
+
+Data
+====
+database:  8 bytes
+
+k describe secrets db-user-pass-cka05-trb 
+Name:         db-user-pass-cka05-trb
+Namespace:    default
+Labels:       <none>
+Annotations:  <none>
+
+Type:  Opaque
+
+Data
+====
+username:  13 bytes
+password:  10 bytes
+
+k describe secrets db-root-pass-cka05-trb 
+Name:         db-root-pass-cka05-trb
+Namespace:    default
+Labels:       <none>
+Annotations:  <none>
+
+Type:  Opaque
+
+Data
+====
+password:  10 bytes
+
+
+k edit deployments.apps db-deployment-cka05-trb (find key "db" and change to corect key "database", find secret "db-user-cka05-trb" and change to correct name "db-user-pass-cka05-trb" and change keys from "db-username" "db-password" to correct "username" "password"):
+deployment.apps/db-deployment-cka05-trb edited
+
+k get all
+NAME                                           READY   STATUS    RESTARTS   AGE
+pod/db-deployment-cka05-trb-676b86666d-nvgcl   1/1     Running   0          2m18s
+
+k describe pod db-deployment-cka05-trb-676b86666d-nvgcl:
+.....
+Environment:
+      DB_ROOT_PASSWORD:  <set to the key 'password' in secret 'db-root-pass-cka05-trb'>  Optional: false
+      DB_DATABASE:       <set to the key 'database' in secret 'db-cka05-trb'>            Optional: false
+      DB_USER:           <set to the key 'username' in secret 'db-user-pass-cka05-trb'>  Optional: false
+      DB_PASSWORD:       <set to the key 'password' in secret 'db-user-pass-cka05-trb'>  Optional: false
+.....
+Normal  Started    3m14s  kubelet            Started container db      
+
+=============================================================================================
+
+Weight: 1
+SECTION: TROUBLESHOOTING
+
+For this question, please set the context to cluster1 by running:
+
+kubectl config use-context cluster1
+
+There is a deployment called nginx-dp-cka04-trb which has been used to deploy a static website. The access to this website can be tested by running: curl http://kodekloud-exam.app:30002. However, it is not working at the moment.
+
+Troubleshoot and fix it.
+
+k describe pod nginx-dp-cka04-trb-767b767dc-rdjx5:
+
+Warning  FailedMount  18s (x7 over 50s)  kubelet            MountVolume.SetUp failed for volume "nginx-config-volume-cka04-trb" : configmap "nginx-configuration-cka04-trb" not found
+
+k get configmaps 
+NAME                     DATA   AGE
+index.html               1      2m27s
+kube-root-ca.crt         1      96m
+nginx-config-cka04-trb   1      2m27s
+
+k edit deployments.apps nginx-dp-cka04-trb (find and fix from "nginx-configuration-cka04-trb" to "nginx-config-cka04-trb")
+
+if pod recreates long\doesn't recreates - do it:
+k delete pod nginx-dp-cka04-trb-767b767dc-xw7l8
+k delete replicasets.apps nginx-dp-cka04-trb-767b767dc
+wait
+
+k get all
+NAME                                           READY   STATUS    RESTARTS   AGE
+pod/db-deployment-cka05-trb-676b86666d-nvgcl   1/1     Running   0          10m
+pod/nginx-dp-cka04-trb-68b89fd8b7-bdkpp        1/1     Running   0          14s  #OK
+pod/red-probe-cka12-trb                        1/1     Running   0          24m
+
+
+curl http://kodekloud-exam.app:30002
+</style>
+</head>
+<body>
+<h1>Welcome to KodeKloud!</h1>
+<p>If you see this page, the nginx web server is successfully 
+installed and working. Further configuration is required.</p>
+
+<p>For online documentation and support please refer to
+<a href=http://nginx.org/>nginx.org</a>.<br/>
+Commercial support is available at
+<a href=http://nginx.com/>nginx.com</a>.</p>
+
+<p><em>Thank you for using nginx.</em></p>
+</body>
+</html>
+
+=============================================================================================
+
+Weight: 9
+SECTION: TROUBLESHOOTING
+
+For this question, please set the context to cluster1 by running:
+
+kubectl config use-context cluster1
+
+The deployment called web-dp-cka17-trb has 0 out of 1 pods up and running. Troubleshoot this issue and fix it. Make sure all required POD(s) are in running state and stable (not restarting).
+
+The application runs on port 80 inside the container and is exposed on the node port 30090.
+POD(s) are running and stable?
+Issues are fixed?
+
+
+k describe pod web-dp-cka17-trb-6b5db94dc7-hcdf8
+Events:
+  Type     Reason            Age   From               Message
+  ----     ------            ----  ----               -------
+  Warning  FailedScheduling  107s  default-scheduler  0/3 nodes are available: 3 pod has unbound immediate PersistentVolumeClaims. preemption: 0/3 nodes are available: 3 Preemption is not helpful for scheduling.
+
+there was PVC > PV, we cannot edit pending or any PVC (PVC protect), i did this:
+
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: web-pvc-cka17-trb
+  namespace: default
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+  storageClassName: ""
+  volumeMode: Filesystem
+
+k delete persistentvolumeclaims web-pvc-cka17-trb
+
+k apply -f web-pvc-cka17-trb.yaml
+
+k describe pod web-dp-cka17-trb-6b5db94dc7-qpwzm:
+........
+Error: failed to create containerd task: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: exec: "/bin/bsh\\": stat /bin/bsh\: no such file or directory: unknown
+........
+
+k edit deployments.apps web-dp-cka17-trb (fix "/bin/bsh\" to "/bin/bash", fix liveness probe port from 81 to 80)
+k get all:
+......
+pod/web-dp-cka17-trb-7d98b457f8-mqnwt          1/1     Running   1 (10s ago)     23s
+.....
+
+k logs web-dp-cka17-trb-7d98b457f8-mqnwt 
+AH00558: httpd: Could not reliably determine the server's fully qualified domain name, using 10.50.192.3. Set the 'ServerName' directive globally to suppress this message
+AH00558: httpd: Could not reliably determine the server's fully qualified domain name, using 10.50.192.3. Set the 'ServerName' directive globally to suppress this message
+[Sun Apr 21 17:12:40.616132 2024] [mpm_event:notice] [pid 1:tid 139632078546816] AH00489: Apache/2.4.59 (Unix) configured -- resuming normal operations
+[Sun Apr 21 17:12:40.616298 2024] [core:notice] [pid 1:tid 139632078546816] AH00094: Command line: 'httpd -D FOREGROUND'
+10.50.192.0 - - [21/Apr/2024:17:12:44 +0000] "GET / HTTP/1.1" 200 39
+10.50.192.0 - - [21/Apr/2024:17:12:47 +0000] "GET / HTTP/1.1" 200 39
+10.50.192.0 - - [21/Apr/2024:17:12:50 +0000] "GET / HTTP/1.1" 200 39
+10.50.192.0 - - [21/Apr/2024:17:12:53 +0000] "GET / HTTP/1.1" 200 39
+10.50.192.0 - - [21/Apr/2024:17:12:56 +0000] "GET / HTTP/1.1" 200 39
+
+=============================================================================================
+
+Weight: 5
+SECTION: TROUBLESHOOTING
+
+For this question, please set the context to cluster4 by running:
+
+kubectl config use-context cluster4
+
+There is a pod called pink-pod-cka16-trb created in the default namespace in cluster4. This app runs on port tcp/5000 and it is exposed to end-users using an ingress resource called pink-ing-cka16-trb in such a way that it is supposed to be accessible using the command: curl http://kodekloud-pink.app on cluster4-controlplane host.
+
+However, this is not working. Troubleshoot and fix this issue, making any necessary to the objects.
+
+Note: You should be able to ssh into the cluster4-controlplane using ssh cluster4-controlplane command.
+
+there wasn't ingress resourses "pink-ing-cka16-trb" nowhere on cluster4 nowhere in different namespaces
+
+no soluton, but service "pink-svc-cka16-trb" was with error (there was UDP protocol instead of TCP), but no working solution
+
++++++++++++++
+
+correct solution:
+
+1) fix service "pink-svc-cka16-trb" (there was UDP protocol instead of TCP)
+k edit services pink-svc-cka16-trb
+
+2) there isn't ingress - there was CoreDNS:
+
+Let's check if we have CoreDNS deployment running:
+
+kubectl get deploy -n kube-system
+You will see that for coredns all relicas are down, you will see 0/0 ready pods. So let's scale up this deployment.
+
+kubectl scale --replicas=2 deployment coredns -n kube-system
+Once CoreDBS is up let's try to access to app again.
+
+curl kodekloud-pink.app
+It should work now.
+
++++++++++++++++++++++++++
+
+=============================================================================================
+
+Weight: 3
+SECTION: TROUBLESHOOTING
+
+For this question, please set the context to cluster2 by running:
+
+kubectl config use-context cluster2
+
+We recently deployed a DaemonSet called logs-cka26-trb under kube-system namespace in cluster2 for collecting logs from all the cluster nodes including the controlplane node. However, at this moment, the DaemonSet is not creating any pod on the controlplane node.
+
+Troubleshoot the issue and fix it to make sure the pods are getting created on all nodes including the controlplane node.
+
+k get nodes
+NAME                    STATUS   ROLES           AGE    VERSION
+cluster2-controlplane   Ready    control-plane   111m   v1.24.0
+cluster2-node01         Ready    <none>          111m   v1.24.0
+
+2 nodes in cluster
+
+1) k edit -n kube-system daemonsets.apps logs-cka26-trb
+
+check this in deamonset:
+
+tolerations:
+      # these tolerations are to have the daemonset runnable on control plane nodes
+      # remove them if your control plane nodes should not run pods
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+
+add this in tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+
+2) k get all -n kube-system 
+NAME                                                READY   STATUS    RESTARTS       AGE
+pod/coredns-6d4b75cb6d-77wfl                        1/1     Running   0              109m
+pod/coredns-6d4b75cb6d-xxswp                        1/1     Running   0              109m
+pod/etcd-cluster2-controlplane                      1/1     Running   0              109m
+pod/kube-apiserver-cluster2-controlplane            1/1     Running   0              109m
+pod/kube-controller-manager-cluster2-controlplane   1/1     Running   0              109m
+pod/kube-proxy-kl27q                                1/1     Running   0              109m
+pod/kube-proxy-nsg8v                                1/1     Running   0              108m
+pod/kube-scheduler-cluster2-controlplane            1/1     Running   0              109m
+pod/logs-cka26-trb-2qb9t                            1/1     Running   0              39s          # ok 1 node
+pod/logs-cka26-trb-rg75z                            1/1     Running   0              6s           # ok 2 node
+
+
+=============================================================================================
+
+Weight: 4
+SECTION: SCHEDULING
+
+For this question, please set the context to cluster1 by running:
+
+kubectl config use-context cluster1
+
+We have deployed a simple web application called frontend-wl04 on cluster1. This version of the application has some issues from a security point of view and needs to be updated to version 2.
+
+Update the image and wait for the application to fully deploy.
+
+You can verify the running application using the curl command on the terminal:
+
+
+student-node ~ ➜  curl http://cluster1-node01:30080
+<!doctype html>
+<title>Hello from Flask</title>
+<body style="background: #2980b9;"></body>
+<div style="color: #e4e4e4;
+    text-align:  center;
+    height: 90px;
+    vertical-align:  middle;">
+
+  <h1>Hello from frontend-wl04-84fc69bd96-p7rbl!</h1>
+
+
+
+  <h2>
+    Application Version: v1
+  </h2>
+
+
+</div>
+student-node ~ ➜ 
+
+
+Version 2 Image details as follows:
+
+1. Current version of the image is `v1`, we need to update with the image to kodekloud/webapp-color:v2.
+2. Use the imperative command to update the image.
+
+i hate imperative - it is like "a bull (elephant) in a china shop" - i like declarative:
+
+k edit deployments.apps frontend-wl04 (find image and change version to "v2")
+
+there was no solution for imperative
+
+my tip: kubectl edit - let's think this is imperative because we hadn't get manifest file and edit it :-) 
+
+
+=============================================================================================
+
+Weight: 8
+SECTION: SCHEDULING
+
+For this question, please set the context to cluster3 by running:
+
+kubectl config use-context cluster3
+
+One of our Junior DevOps engineers have deployed a pod nginx-wl06 on the cluster3-controlplane node. However, while specifying the resource limits, instead of using Mebibyte as the unit, Gebibyte was used.
+
+As a result, the node doesn't have sufficient resources to deploy this pod and it is stuck in a pending state
+
+Fix the units and re-deploy the pod (Delete and recreate the pod if needed).
+
+

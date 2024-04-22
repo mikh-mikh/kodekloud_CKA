@@ -1,0 +1,380 @@
+Arise, awake, and stop not till the goal is reached.
+
+– Swami Vivekananda
+
+=============================================================================================
+
+Weight: 8
+SECTION: ARCHITECTURE, INSTALL AND MAINTENANCE
+
+For this question, please set the context to cluster1 by running:
+
+kubectl config use-context cluster1
+
+A pod called color-app-cka13-arch has been created in the default namespace. This pod logs can be accessed using kubectl logs -f color-app-cka13-arch command from the student-node. It is currently displaying Color is pink output. Update the pod definition file to make use of the environment variable with the value - green and recreate this pod.
+
+k get pod color-app-cka13-arch -o yaml > color-app-cka13-arch.yaml
+vi color-app-cka13-arch.yaml (find "pink" and change to "green")
+k delete pod color-app-cka13-arch
+k apply -f color-app-cka13-arch.yaml:
+pod/color-app-cka13-arch created
+k logs color-app-cka13-arch 
+Color is green
+
+=============================================================================================
+
+Find the node across all clusters that consumes the most memory and store the result to the file /opt/high_memory_node in the following format cluster_name,node_name.
+
+The node could be in any clusters that are currently configured on the student-node
+
+k top node 
+NAME                    CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%   
+cluster1-controlplane   108m         0%     894Mi           0%        
+cluster1-node01         23m          0%     317Mi           0%        
+cluster1-node02         26m          0%     327Mi           0%        
+
+student-node ~ ➜  kubectl config use-context cluster2
+Switched to context "cluster2".
+
+student-node ~ ➜  k top node 
+NAME                    CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%   
+cluster2-controlplane   102m         0%     887Mi           0%        
+cluster2-node01         26m          0%     329Mi           0%        
+
+student-node ~ ➜  kubectl config use-context cluster3
+Switched to context "cluster3".
+
+student-node ~ ➜  k top node 
+NAME                    CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%   
+cluster3-controlplane   74m          0%     920Mi           0%        #GOTCHA
+
+student-node ~ ➜  kubectl config use-context cluster4
+Switched to context "cluster4".
+
+student-node ~ ➜  k top node 
+NAME                    CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%   
+cluster4-controlplane   90m          0%     894Mi           0%        
+cluster4-node01         25m          0%     328Mi           0%
+
+echo "cluster3,cluster3-controlplane" > /opt/high_memory_node
+
+solution 2:
+
+student-node ~ ➜  kubectl top node --context cluster1 --no-headers | sort -nr -k4 | head -1
+cluster1-controlplane   124m   1%    768Mi   1%    
+
+student-node ~ ➜  kubectl top node --context cluster2 --no-headers | sort -nr -k4 | head -1
+cluster2-controlplane   79m   0%    873Mi   1%    
+
+student-node ~ ➜  kubectl top node --context cluster3 --no-headers | sort -nr -k4 | head -1
+cluster3-controlplane   78m   0%    902Mi   1%  
+
+student-node ~ ➜  kubectl top node --context cluster4 --no-headers | sort -nr -k4 | head -1
+cluster4-controlplane   78m   0%    901Mi   1%    
+
+=============================================================================================
+
+Weight: 8
+SECTION: ARCHITECTURE, INSTALL AND MAINTENANCE
+
+For this question, please set the context to cluster1 by running:
+
+kubectl config use-context cluster1
+
+Create a service account called pink-sa-cka24-arch. Further create a cluster role called pink-role-cka24-arch with full permissions on all resources in the core api group under default namespace in cluster1.
+
+Finally create a cluster role binding called pink-role-binding-cka24-arch to bind pink-role-cka24-arch cluster role with pink-sa-cka24-arch service account.
+
+++++++++++++++chatgpt+++++++++++++++++++++++++
+1. **Create ServiceAccount YAML** (pink-sa-cka24-arch.yaml):
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pink-sa-cka24-arch
+
+2. . **Create ClusterRole YAML** (pink-role-cka24-arch.yaml):
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pink-role-cka24-arch
+rules:
+- apiGroups: [""]
+  resources: ["*"]
+  verbs: ["*"]
+
+3. **Create ClusterRoleBinding YAML** (pink-role-binding-cka24-arch.yaml):
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: pink-role-binding-cka24-arch
+subjects:
+- kind: ServiceAccount
+  name: pink-sa-cka24-arch
+  namespace: default
+roleRef:
+  kind: ClusterRole
+  name: pink-role-cka24-arch
+  apiGroup: rbac.authorization.k8s.io
+
+kubectl apply -f pink-sa-cka24-arch.yaml
+kubectl apply -f pink-role-cka24-arch.yaml
+kubectl apply -f pink-role-binding-cka24-arch.yaml
+
+=============================================================================================
+
+Weight: 1
+SECTION: ARCHITECTURE, INSTALL AND MAINTENANCE
+
+For this question, please set the context to cluster1 by running:
+
+kubectl config use-context cluster1
+
+There is a script located at /root/pod-cka26-arch.sh on the student-node. Update this script to add a command to filter/display the label with value component of the pod called kube-apiserver-cluster1-controlplane (on cluster1) using jsonpath
+
+Solution:
+
+/root/pod-cka26-arch.sh:
+
+#!/bin/bash
+kubectl get pod kube-apiserver-cluster1-controlplane -n kube-system -o=jsonpath='{.metadata.labels.component}'
+
+student-node ~ ➜  bash /root/pod-cka26-arch.sh 
+kube-apiserver
+
+=============================================================================================
+
+Weight: 6
+SECTION: ARCHITECTURE, INSTALL AND MAINTENANCE
+
+For this question, please set the context to cluster1 by running:
+
+kubectl config use-context cluster1
+
+An etcd backup is already stored at the path /opt/cluster1_backup_to_restore.db on the cluster1-controlplane node. Use /root/default.etcd as the --data-dir and restore it on the cluster1-controlplane node itself.
+
+You can ssh to the controlplane node by running ssh root@cluster1-controlplane from the student-node
+
+
+
+=============================================================================================
+
+Weight: 8
+SECTION: TROUBLESHOOTING
+
+For this question, please set the context to cluster1 by running:
+
+kubectl config use-context cluster1
+
+The deployment called web-dp-cka17-trb has 0 out of 1 pods up and running. Troubleshoot this issue and fix it. Make sure all required POD(s) are in running state and stable (not restarting).
+
+The application runs on port 80 inside the container and is exposed on the node port 30090
+
+
+
+k describe pod web-dp-cka17-trb-6b5db94dc7-hcdf8
+Events:
+  Type     Reason            Age   From               Message
+  ----     ------            ----  ----               -------
+  Warning  FailedScheduling  107s  default-scheduler  0/3 nodes are available: 3 pod has unbound immediate PersistentVolumeClaims. preemption: 0/3 nodes are available: 3 Preemption is not helpful for scheduling.
+
+there was PVC > PV, we cannot edit pending or any PVC (PVC protect), i did this:
+
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: web-pvc-cka17-trb
+  namespace: default
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+  storageClassName: ""
+  volumeMode: Filesystem
+
+k delete persistentvolumeclaims web-pvc-cka17-trb
+
+k apply -f web-pvc-cka17-trb.yaml
+
+k describe pod web-dp-cka17-trb-6b5db94dc7-qpwzm:
+........
+Error: failed to create containerd task: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: exec: "/bin/bsh\\": stat /bin/bsh\: no such file or directory: unknown
+........
+
+k edit deployments.apps web-dp-cka17-trb (fix "/bin/bsh\" to "/bin/bash", fix liveness probe port from 81 to 80)
+k get all:
+......
+pod/web-dp-cka17-trb-7d98b457f8-mqnwt          1/1     Running   1 (10s ago)     23s
+.....
+
+k logs web-dp-cka17-trb-7d98b457f8-mqnwt 
+AH00558: httpd: Could not reliably determine the server's fully qualified domain name, using 10.50.192.3. Set the 'ServerName' directive globally to suppress this message
+AH00558: httpd: Could not reliably determine the server's fully qualified domain name, using 10.50.192.3. Set the 'ServerName' directive globally to suppress this message
+[Sun Apr 21 17:12:40.616132 2024] [mpm_event:notice] [pid 1:tid 139632078546816] AH00489: Apache/2.4.59 (Unix) configured -- resuming normal operations
+[Sun Apr 21 17:12:40.616298 2024] [core:notice] [pid 1:tid 139632078546816] AH00094: Command line: 'httpd -D FOREGROUND'
+10.50.192.0 - - [21/Apr/2024:17:12:44 +0000] "GET / HTTP/1.1" 200 39
+10.50.192.0 - - [21/Apr/2024:17:12:47 +0000] "GET / HTTP/1.1" 200 39
+10.50.192.0 - - [21/Apr/2024:17:12:50 +0000] "GET / HTTP/1.1" 200 39
+10.50.192.0 - - [21/Apr/2024:17:12:53 +0000] "GET / HTTP/1.1" 200 39
+10.50.192.0 - - [21/Apr/2024:17:12:56 +0000] "GET / HTTP/1.1" 200 39
+
+=============================================================================================
+
+Weight: 8
+SECTION: TROUBLESHOOTING
+
+For this question, please set the context to cluster1 by running:
+
+kubectl config use-context cluster1
+
+A template to create a Kubernetes pod is stored at /root/red-probe-cka12-trb.yaml on the student-node. However, using this template as-is is resulting in an error.
+
+Fix the issue with this template and use it to create the pod. Once created, watch the pod for a minute or two to make sure its stable i.e, it's not crashing or restarting.
+
+Make sure you do not update the args: section of the template.
+
+vi /root/red-probe-cka12-trb.yaml:
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: red-probe-cka12-trb
+spec:
+  containers:
+  - name: red-probe-cn-cka12-trb
+    image: busybox:latest
+    args:
+    - /bin/sh
+    - -c
+    - sleep 3 ; touch /healthcheck; sleep 30;sleep 30000
+    livenessProbe:
+      httpGet:             			# fix to exec
+          command:
+          - cat
+          - /healthcheck
+      initialDelaySeconds: 1        # set value >= sleep 3 (i sat 5), if 1 pod will restart because 3 > 1 (see args)
+      periodSeconds: 1
+      failureThreshold: 1
+
+k apply -f /root/red-probe-cka12-trb.yaml
+
+pod/red-probe-cka12-trb                   1/1     Running   0          4m30s
+
+=============================================================================================
+
+Weight: 2
+SECTION: TROUBLESHOOTING
+
+For this question, please set the context to cluster1 by running:
+
+kubectl config use-context cluster1
+
+A pod called check-time-cka03-trb is continuously crashing. Figure out what is causing this and fix it.
+
+Make sure that the check-time-cka03-trb POD is in running state.
+
+This pod prints the current date and time at a pre-defined frequency and saves it to a file. Ensure that it continues this operation once you have fixed it.
+
+k describe pod check-time-cka03-trb:
+.......
+Warning  Failed     4s (x4 over 46s)  kubelet            Error: failed to create containerd task: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: exec: "/bin/bash": stat /bin/bash: no such file or directory: unknown
+.......
+
+
+
+
+
+
+
+
+=============================================================================================
+
+Weight: 4
+SECTION: TROUBLESHOOTING
+
+For this question, please set the context to cluster1 by running:
+
+kubectl config use-context cluster1
+
+There is a Cronjob called orange-cron-cka10-trb which is supposed to run every two minutes (i.e 13:02, 13:04, 13:06…14:02, 14:04…and so on). This cron targets the application running inside the orange-app-cka10-trb pod to make sure the app is accessible. The application has been exposed internally as a ClusterIP service.
+
+However, this cron is not running as per the expected schedule and is not running as intended.
+
+Make the appropriate changes so that the cronjob runs as per the required schedule and it passes the accessibility checks every-time.
+
+Cron is running as per the required schedule?
+Cronjob is fixed?
+Look for completed Cron jobs?
+
+1) edit cronjob and fix "*/2 * * * *"
+2) 
+
+=============================================================================================
+
+Weight: 3
+SECTION: TROUBLESHOOTING
+
+For this question, please set the context to cluster2 by running:
+
+kubectl config use-context cluster2
+
+We recently deployed a DaemonSet called logs-cka26-trb under kube-system namespace in cluster2 for collecting logs from all the cluster nodes including the controlplane node. However, at this moment, the DaemonSet is not creating any pod on the controlplane node.
+
+Troubleshoot the issue and fix it to make sure the pods are getting created on all nodes including the controlplane node.
+
+k get nodes
+NAME                    STATUS   ROLES           AGE    VERSION
+cluster2-controlplane   Ready    control-plane   111m   v1.24.0
+cluster2-node01         Ready    <none>          111m   v1.24.0
+
+2 nodes in cluster
+
+1) k edit -n kube-system daemonsets.apps logs-cka26-trb
+
+check this in deamonset:
+
+tolerations:
+      # these tolerations are to have the daemonset runnable on control plane nodes
+      # remove them if your control plane nodes should not run pods
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+
+add this in tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+
+2) k get all -n kube-system 
+NAME                                                READY   STATUS    RESTARTS       AGE
+pod/coredns-6d4b75cb6d-77wfl                        1/1     Running   0              109m
+pod/coredns-6d4b75cb6d-xxswp                        1/1     Running   0              109m
+pod/etcd-cluster2-controlplane                      1/1     Running   0              109m
+pod/kube-apiserver-cluster2-controlplane            1/1     Running   0              109m
+pod/kube-controller-manager-cluster2-controlplane   1/1     Running   0              109m
+pod/kube-proxy-kl27q                                1/1     Running   0              109m
+pod/kube-proxy-nsg8v                                1/1     Running   0              108m
+pod/kube-scheduler-cluster2-controlplane            1/1     Running   0              109m
+pod/logs-cka26-trb-2qb9t                            1/1     Running   0              39s          # ok 1 node
+pod/logs-cka26-trb-rg75z                            1/1     Running   0              6s           # ok 2 node
+
+=============================================================================================
+
+Weight: 4
+SECTION: SCHEDULING
+
+For this question, please set the context to cluster3 by running:
+
+kubectl config use-context cluster3
+
+A manifest file is available at the /root/app-wl03/ on the student-node node. There are some issues with the file; hence couldn't deploy a pod on the cluster3-controlplane node.
+
+After fixing the issues, deploy the pod, and it should be in a running state.
+
+NOTE: - Ensure that the existing limits are unchanged.
+
